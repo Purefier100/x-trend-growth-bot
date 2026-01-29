@@ -57,7 +57,7 @@ Telegram bot token
 Chromium (installed automatically by Playwright)
 
 🛠️ Installation
-git clone https://github.com/yourusername/x-trend-growth-bot
+git clone https://github.com/purefier100/x-trend-growth-bot
 cd x-trend-growth-bot
 npm install
 npx playwright install chromium
