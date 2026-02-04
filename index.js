@@ -67,6 +67,7 @@ async function run() {
 }
 
 // ---- start ----
-run();
-setInterval(run, INTERVAL_MS);
+await run();
+process.exit(0);
+
 
