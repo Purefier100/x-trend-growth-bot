@@ -1,9 +1,8 @@
 import { INFLUENCERS } from "./influencers.js";
 import { isFastVelocity } from "./velocity.js";
 
-// all keywords lowercase
+// ✅ Strong alpha keywords only
 const KEYWORDS = [
-    // airdrop / infra
     "airdrop",
     "points",
     "xp",
@@ -11,66 +10,76 @@ const KEYWORDS = [
     "whitelist",
     "testnet",
     "devnet",
-    "beta",
     "mainnet",
+    "beta",
+    "early access",
     "now live",
     "soft launch",
-    "early access",
 
-    // base / l2
     "base",
-    "on base",
-    "base meme",
     "layer 2",
     "l2",
     "rollup",
 
-    // actions
     "bridge",
     "stake",
     "mint",
     "claim",
     "deposit",
 
-    // meme / degen
-    "meme",
     "memecoin",
-    "degen",
-    "shitcoin",
-    "stealth",
+    "meme",
     "fair launch",
+    "stealth launch",
     "no presale",
     "community launch",
-    "just launched",
-    "lp live",
-    "liquidity",
-    "volume",
-    "holders",
-    "ape",
-    "aping",
-    "moon",
-    "cook",
-    "sending"
+    "just launched"
 ];
+
+// 🚫 Block obvious noise accounts
+const BLOCKLIST = [
+    "cristiano",
+    "elonmusk",
+    "leomessi"
+];
+
+// ⏱️ Only alert tweets newer than this
+const MAX_TWEET_AGE_HOURS = 2;
 
 export function isTrending(tweet) {
     if (!tweet?.text || !tweet?.link) return false;
 
     const text = tweet.text.toLowerCase();
+    const username = tweet.username?.toLowerCase() || "";
 
-    // 1️⃣ keyword gate (still required)
+    // 🚫 Block reposts
+    if (text.includes("reposted")) return false;
+
+    // 🚫 Block celebrities/noise
+    if (BLOCKLIST.includes(username)) return false;
+
+    // 1️⃣ Keyword gate
     const keywordMatch = KEYWORDS.some(k => text.includes(k));
     if (!keywordMatch) return false;
 
-    const username = tweet.username?.toLowerCase() || "";
+    // 2️⃣ Time filter (requires scraper returning tweet.time)
+    if (tweet.time) {
+        const tweetTime = new Date(tweet.time).getTime();
+        const ageHours = (Date.now() - tweetTime) / (1000 * 60 * 60);
 
+        if (ageHours > MAX_TWEET_AGE_HOURS) {
+            return false; // too old
+        }
+    }
+
+    // 3️⃣ Alpha scoring
     const influencer = INFLUENCERS.includes(username);
     const fast = isFastVelocity(tweet);
 
-    // 🔥 MUCH LOWER threshold
-    const earlySignal = tweet.likes >= 3;
+    // 🔥 Early signal: tiny engagement but fresh
+    const earlySignal = tweet.likes >= 2;
 
-    // 🚨 aggressive logic
+    // ✅ Alert if any strong signal hits
     if (influencer || fast || earlySignal) return true;
 
     return false;
