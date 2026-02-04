@@ -1,6 +1,7 @@
 import { chromium } from "playwright";
 import fs from "fs";
-import { TARGETS } from "./targets.js";
+import { TARGET_ACCOUNTS } from "./targets.js";
+
 
 export async function scrapeTweets() {
     const browser = await chromium.launch({
@@ -38,7 +39,7 @@ export async function scrapeTweets() {
     const page = await context.newPage();
     const results = [];
 
-    for (const handle of TARGETS) {
+    for (const handle of TARGET_ACCOUNTS) {
         console.log("🌐 Visiting profile:", handle);
 
         await page.goto(`https://x.com/${handle}`, {
