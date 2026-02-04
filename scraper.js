@@ -2,7 +2,6 @@ import { chromium } from "playwright";
 import fs from "fs";
 import { TARGET_ACCOUNTS } from "./targets.js";
 
-
 export async function scrapeTweets() {
     const browser = await chromium.launch({
         headless: true,
@@ -37,7 +36,13 @@ export async function scrapeTweets() {
     }
 
     const page = await context.newPage();
-    const results = [];
+    let results = [];
+
+    // 🕒 Current time
+    const now = Date.now();
+
+    // ⏱️ Only allow tweets from last 2 hours
+    const MAX_AGE_MINUTES = 120;
 
     for (const handle of TARGET_ACCOUNTS) {
         console.log("🌐 Visiting profile:", handle);
@@ -49,12 +54,12 @@ export async function scrapeTweets() {
 
         await page.waitForTimeout(3000);
 
-        // Scroll slightly
-        await page.mouse.wheel(0, 2500);
-        await page.waitForTimeout(1500);
+        // Scroll slightly to load newest tweets
+        await page.mouse.wheel(0, 3000);
+        await page.waitForTimeout(2000);
 
         const tweets = await page.$$eval("article", articles =>
-            articles.slice(0, 5).map(article => {
+            articles.slice(0, 8).map(article => {
                 const text =
                     article.querySelector('[data-testid="tweetText"]')?.innerText || "";
 
@@ -64,11 +69,9 @@ export async function scrapeTweets() {
                 const time =
                     article.querySelector("time")?.getAttribute("datetime") || "";
 
-                // Extract handle safely
                 const username =
                     link.split("/status/")[0]?.replace("https://x.com/", "") || "";
 
-                // Likes
                 const likesText =
                     article.querySelector('[data-testid="like"]')?.innerText || "0";
 
@@ -87,6 +90,19 @@ export async function scrapeTweets() {
 
     await browser.close();
 
-    console.log(`📄 Tweets scraped: ${results.length}`);
-    return results;
+    console.log(`📄 Total tweets scraped: ${results.length}`);
+
+    // ✅ FILTER: Only recent tweets (last 2 hours)
+    const freshTweets = results.filter(t => {
+        if (!t.time) return false;
+
+        const tweetTime = new Date(t.time).getTime();
+        const diffMinutes = (now - tweetTime) / 1000 / 60;
+
+        return diffMinutes <= MAX_AGE_MINUTES;
+    });
+
+    console.log(`🕒 Fresh tweets only: ${freshTweets.length}`);
+
+    return freshTweets;
 }
