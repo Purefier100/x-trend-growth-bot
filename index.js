@@ -5,9 +5,12 @@ import { isTrending } from "./filter.js";
 import { sendAlert } from "./telegram.js";
 
 const SEEN_FILE = "seen.json";
-
-// Limit alerts per scan (prevents spam)
 const MAX_ALERTS_PER_RUN = 5;
+
+// ✅ Delay helper (prevents Telegram spam ban)
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // ---- Load seen tweets safely ----
 let seen = new Set();
@@ -24,14 +27,11 @@ if (fs.existsSync(SEEN_FILE)) {
 
 // ---- Main runner ----
 async function run() {
-    console.log(
-        `\n🔍 Scanning X — ${new Date().toLocaleString()}`
-    );
+    console.log(`\n🔍 Scanning X — ${new Date().toLocaleString()}`);
 
     let tweets = [];
 
     try {
-        // ✅ Profile scraping mode
         tweets = await scrapeTweets();
     } catch (err) {
         console.error("❌ Scraper failed:", err.message);
@@ -45,8 +45,6 @@ async function run() {
 
     for (const tweet of tweets) {
         if (!tweet?.link || !tweet?.text) continue;
-
-        // Skip if already seen
         if (seen.has(tweet.link)) continue;
 
         newTweets++;
@@ -56,7 +54,6 @@ async function run() {
             tweet.text.slice(0, 80).replace(/\n/g, " ")
         );
 
-        // Trending check
         if (isTrending(tweet)) {
             try {
                 await sendAlert(tweet);
@@ -64,10 +61,11 @@ async function run() {
 
                 console.log("🚨 Alert sent!");
 
-                // Mark as seen
                 seen.add(tweet.link);
 
-                // Stop if too many alerts this run
+                // ✅ Prevent Telegram spam
+                await sleep(3000);
+
                 if (alertsSent >= MAX_ALERTS_PER_RUN) {
                     console.log(
                         `⚠️ Max alerts (${MAX_ALERTS_PER_RUN}) reached — stopping early`
@@ -82,16 +80,18 @@ async function run() {
         }
     }
 
-    // Save seen tweets
+    // ✅ Trim seen list so it doesn’t grow forever
+    if (seen.size > 500) {
+        seen = new Set([...seen].slice(-200));
+        console.log("🧹 Seen list trimmed");
+    }
+
     fs.writeFileSync(SEEN_FILE, JSON.stringify([...seen], null, 2));
 
-    console.log(
-        `✅ Scan complete | New: ${newTweets} | Alerts: ${alertsSent}`
-    );
+    console.log(`✅ Scan complete | New: ${newTweets} | Alerts: ${alertsSent}`);
 }
 
 // ---- Start once (GitHub Actions safe) ----
 await run();
 process.exit(0);
-
 
