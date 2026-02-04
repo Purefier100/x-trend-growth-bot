@@ -2,3 +2,5 @@ node_modules/
 .env
 seen.json
 playwright/.cache/
+auth.json
+*-DESKTOP-*
