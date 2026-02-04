@@ -4,3 +4,4 @@ seen.json
 playwright/.cache/
 auth.json
 *-DESKTOP-*
+auth.json
