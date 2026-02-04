@@ -17,5 +17,5 @@ export function isFastVelocity(tweet) {
 
     velocityMap.set(tweet.link, { likes, time: now });
 
-    return likesPerMin >= 1; // 🔥 adjust if needed
+    return likesPerMin >= 0.5; // 🔥 adjust if needed
 }

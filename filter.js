@@ -1,21 +1,77 @@
 import { INFLUENCERS } from "./influencers.js";
 import { isFastVelocity } from "./velocity.js";
 
-const KEYWORDS = ["airdrop", "base", "points", "testnet", "farming", "GM", "MAainnet", "BULK", "points", "xp", "quest", "whitelist", "testnet", "devnet", "beta", "now live", "soft launch", "early access", "base", "layer 2", "l2", "rollup", "bridge", "stake", "mint", "claim", "deposit", "meme", "memecoin", "degen", "shitcoin", "stealth", "fair launch", "no presale", "community launch", "just launched", "live now", "cook", "sending", "run it", "ape", "aping", "moon", "mint", "lp live", "liquidity", "volume", "holders", "base", "on base", "base meme"];
+// all keywords lowercase
+const KEYWORDS = [
+    // airdrop / infra
+    "airdrop",
+    "points",
+    "xp",
+    "quest",
+    "whitelist",
+    "testnet",
+    "devnet",
+    "beta",
+    "mainnet",
+    "now live",
+    "soft launch",
+    "early access",
+
+    // base / l2
+    "base",
+    "on base",
+    "base meme",
+    "layer 2",
+    "l2",
+    "rollup",
+
+    // actions
+    "bridge",
+    "stake",
+    "mint",
+    "claim",
+    "deposit",
+
+    // meme / degen
+    "meme",
+    "memecoin",
+    "degen",
+    "shitcoin",
+    "stealth",
+    "fair launch",
+    "no presale",
+    "community launch",
+    "just launched",
+    "lp live",
+    "liquidity",
+    "volume",
+    "holders",
+    "ape",
+    "aping",
+    "moon",
+    "cook",
+    "sending"
+];
 
 export function isTrending(tweet) {
-    if (!tweet.text || !tweet.link) return false;
+    if (!tweet?.text || !tweet?.link) return false;
 
-    // 1️⃣ keyword filter
     const text = tweet.text.toLowerCase();
-    if (!KEYWORDS.some(k => text.includes(k))) return false;
 
-    // 2️⃣ influencer filter
-    if (!INFLUENCERS.includes(tweet.username)) return false;
+    // 1️⃣ keyword gate (still required)
+    const keywordMatch = KEYWORDS.some(k => text.includes(k));
+    if (!keywordMatch) return false;
 
-    // 3️⃣ velocity filter
-    if (!isFastVelocity(tweet)) return false;
+    const username = tweet.username?.toLowerCase() || "";
 
-    return true;
+    const influencer = INFLUENCERS.includes(username);
+    const fast = isFastVelocity(tweet);
+
+    // 🔥 MUCH LOWER threshold
+    const earlySignal = tweet.likes >= 3;
+
+    // 🚨 aggressive logic
+    if (influencer || fast || earlySignal) return true;
+
+    return false;
 }
-
